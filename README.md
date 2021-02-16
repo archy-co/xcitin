@@ -17,9 +17,15 @@ This module is capable of generating places, where film's recordings took place.
 
 ## Example
 Example run for year **2004** and user location **[37.09024, -95.712891]** (Note, that this module may use randomized functions, so your output may slightly vary)
-![Example](https://raw.githubusercontent.com/archy-co/)
+![Example](https://raw.githubusercontent.com/archy-co/xcitin/main/example1.png)
 
 ## Tags Description
+script tag - javascript code inside
+style tag - css code inside (styling hypertext)
+body tag - website itself
+div tag - block
+link tag - load some external files
+meta tag - charset, encoding
 
 ## Author
 **Archy**
