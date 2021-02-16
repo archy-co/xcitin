@@ -20,12 +20,13 @@ Example run for year **2004** and user location **[37.09024, -95.712891]** (Note
 ![Example](https://raw.githubusercontent.com/archy-co/xcitin/main/example1.png)
 
 ## Tags Description
-* **<script>** tag - javascript code inside
+* **<script>** tag - javascript code inside or link to external javascipt file
 * **<style>** tag - css code inside (styling hypertext)
-* **\<body>** tag - website itself
-* **\<div>** tag - block
-* **\<link>** tag - load some external files
-* **\<meta>** tag - charset, encoding
+* **\<body>** tag - website page itself, website page's body
+* **\<div>** tag - block, used as container or to make section
+* **\<link>** tag - load some external files, e.g. style sheets, css and js frameworks
+* **\<head>** tag - non-displayed metadata used by searchengines. Usually here some external files are loaded
+* **\<meta>** tag - always inside head, defines metadata about page e.g. charset, encoding
 
 
 ## Author
