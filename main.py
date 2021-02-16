@@ -2,6 +2,7 @@
 Main module
 '''
 import time
+import random
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderUnavailable
 from geopy import distance
@@ -11,9 +12,14 @@ import blessed
 term = blessed.Terminal()
 geolocator = Nominatim(user_agent='xcitin')
 
+
+# Constants
+FILMS_LIST_CHECKSIZE = 450
+
+
 def print_main_screen():
     '''
-    This function prints main screen entry information
+    This function prints main screen entry information like greeting, brief explanation
     '''
 
     print(term.center(term.bold('XCITIN')))
@@ -78,7 +84,21 @@ def main():
     user_coordinates = [40.463667, -3.74922] # Spain
     user_coordinates = [52.132633, 5.291266] # Netherlands
     user_coordinates = [49.8037633, 15.4749126] # Czeck republic
+    user_coordinates = [88.505859, 30.656816] # Asia
+    user_coordinates = [20.593684, 78.96288] # India
+    user_coordinates = [7.873054, 80.771797] # Sri Lanka
+    user_coordinates = [35.10964, 73.00781] # Pakistan
+    user_coordinates = [28.394857, 84.124008] # Nepal
+    user_coordinates = [46.818188, 8.227512] # Switzerland
+    user_coordinates = [43.93667, 12.44639] # San Marino
+    user_coordinates = [45.32829, 11.6415] # Italy
+    user_coordinates = [47.7, 13.06667] # Austria
+    user_coordinates = [41.14961, -8.61099] # Portugal
+    user_coordinates = [32.62781, -115.45446] # Mexico
+    user_coordinates = [49.55404, 25.59067] # Ternopil
     user_coordinates = [37.09024, -95.712891] # USA
+    user_coordinates = [17.607789, 8.081666] # Niger
+
 
     
     user_location = geolocator.geocode(user_coordinates)
@@ -86,7 +106,7 @@ def main():
 
     print('USER COUNTRY:', user_country)
 
-    year= 2005
+    year= 2004
     mappy = folium.Map(tiles='OpenStreetMap', location=user_coordinates, zoom_start=6)
     user_location = folium.FeatureGroup(name='User location')
     user_location.add_child(folium.Marker(location=user_coordinates,
@@ -95,22 +115,22 @@ def main():
     mappy.add_child(user_location)
 
 
-    filtered_films = filter_by_year(year, read_data('locations.list.min'))
-    print(f'year: {len(filtered_films)}')
+    filtered_films = filter_by_year(year, read_data('locations.list'))
+    print(f'For {year}: {len(filtered_films)} films\' locations')
 
     filtered_films = filter_federal(filtered_films)
-    print(f'federal: {len(filtered_films)}')
+    filtered_films = filter_pure_countries(filtered_films, user_country)
 
+    print(f'Total location to check: {len(filtered_films)}')
 
-    pure_countries = ['USA', 'Canada', 'UK', 'France', 'Spain', 'Germany']
+    if len(filtered_films) > 900:
+        filtered_films = random_pick(filtered_films, FILMS_LIST_CHECKSIZE)
+        print(f'Picked {len(filtered_films)} random of them')
+        
 
-    for p_country in pure_countries:
-        filtered_films = filter_pure_country(p_country, filtered_films, user_country)
-        print(f'Filter {p_country}: {len(filtered_films)}')
-
-
-    print('Now I\'ll be finding location\'s coordinates. It may take some time. I\'ll log you',
-          'what I found right away so that you didn\'t get bored :)')
+    print(f'Now I\'ll be finding location\'s coordinates for {len(filtered_films)} locations.\n',
+          f'It may take some time - estimated time: {round(len(filtered_films)/3, 2)} sec\n',
+          'I\'ll log you what I found right away so that you didn\'t get bored :)')
 
     located_films = locate_films(filtered_films)
     yearfilt_loc_dist_films_complete = find_distance_asc(located_films, user_coordinates)
@@ -144,10 +164,35 @@ def main():
     mappy.save(mapname)
 
 
-
-def unify_country(country):
+def random_pick(films, anchor_size):
     '''
-    Unifies country names
+    Picks random list of films and returns about anchor_size films picked randomly.
+    This function may not be called if films are filtered well and anchor_size is not
+    reached
+
+    >>> random_pick(['F1', 'F2', 'F3'], 3)
+    ['F1', 'F2', 'F3']
+    >>> random_pick(['F1', 'F2', 'F3', 'F4', 'F5'], 2)
+    ['F2', 'F5']
+    '''
+
+    divider, picked_films = len(films)//anchor_size, []
+    for film in films:
+        if random.randint(divider+1, 3*divider)%divider==0:
+            picked_films.append(film)
+
+    return picked_films
+
+
+def unify_country(country: str) -> str:
+    '''
+    Unifies and unites some countries. Takes a country as input and returns it's group 
+    or unified name
+
+    >>> unify_country('United States')
+    'USA'
+    >>> unify_country('Monaco')
+    'France'
     '''
     if country in ['United States', 'United States of America']:
         return 'USA'
@@ -155,10 +200,20 @@ def unify_country(country):
         return 'UK'
     elif country in ['France', 'Monaco', 'België / Belgique / Belgien']:
         return 'France'
-    elif country in ['Portugal', 'España', 'Andorra']:
+    elif country in ['Portugal', 'España', 'Andorra', 'Spain']:
         return 'Spain'
-    elif country in ['Nederland', 'Deutschland', 'Česko']:
+    elif country in ['Nederland', 'Netherlands', 'Deutschland', 'Česko', 'Polska', 'Poland']:
         return 'Germany'
+    elif country in ['India', 'ලංකාව இலங்', 'آزاد کشمیر', 'नेपाल']:
+        return 'India'
+    elif country in ['Ukraine', 'Україна', 'Moldova', 'Polska', 'Беларусь', 'Poland']:
+        return 'Ukraine'
+    elif country in ['Italia', 'Italy', 'Schweiz/Suisse/Svizzera/Svizra', 'Civitas Vaticana', 'San Marino']:
+        return 'Italy'
+    elif country in ['México', 'Mexico']:
+        return 'Mexico'
+    elif country in ['Türkiye', 'Turkey']:
+        return 'Turkey'
     else:
         return country
 
@@ -167,8 +222,11 @@ def filter_federal(films):
     '''
     Filters films which contains word federal in location, because they raises geopy exception
     for handling which extra 4 secs are required for each film. Therefore, for some years it could
-    ooptimize time twice
+    optimize time twice
+    >>> filter_federal([['F1', 2003, 'Federal District'], ['F2', 2001, 'Simple District']])
+    [['F2', 2001, 'Simple District']]
     '''
+
     filt_films = []
     for film in films:
         if 'Federal' not in film[2]:
@@ -177,16 +235,48 @@ def filter_federal(films):
     return filt_films
 
 
+def filter_pure_countries(filtered_films, user_country):
+    '''
+    Some countries are quite isolated or could be grouped with neighboring countries to create
+    a group which could be considered as a whole: in this group are enough locations, and
+    filtering it from overall results will optimize time dramatically
+
+    This function creates such groups and filters for each group depending whethe user country
+    belongs to group of not: if user country belongs to group, only films' locations form such
+    group will be located. Otherwise, such countries will be filtered from and their locations
+    won't be calculated
+
+    Generally speaking this function calls function filter_pure_country for all pure countries
+    '''
+
+    pure_countries = ['USA', 'Canada', 'UK', 'France', 'Spain', 'Germany', 'India', 'Ukraine', 'Italy',
+                      'China', 'Russia', 'Australia', 'Mexico', 'Turkey']
+
+    for p_country in pure_countries:
+        filtered_films_interim = filter_pure_country(p_country, filtered_films, user_country)
+        if len(filtered_films_interim) < 1 or\
+          (len(filtered_films_interim) < 6 and len(filtered_films) < 120):
+            break
+        else:
+            filtered_films = filtered_films_interim
+
+    return filtered_films
+
+
 def filter_pure_country(pure_country, films, user_country):
     '''
-    filters pure countries
+    Filters one pure country: if user_country belongs to pure_country group, only films from
+    this group will be returned. Otherwise, pure_country group will be filtered and removed
+    from list
+    >>> filter_pure_country('USA', [['F1', 2011, 'NY, USA'], ['F2', 2011, 'Toronto, Canada']], 'USA')
+    [['F1', 2011, 'NY, USA']]
     '''
     filt_films = []
     for film in films:
         film_country = film[2].split(',')[-1].strip()
-        if user_country in pure_country and film_country in pure_country:
+        if user_country in pure_country and unify_country(film_country) in pure_country:
             filt_films.append(film)
-        elif user_country not in pure_country and film_country not in pure_country:
+        elif user_country not in pure_country and unify_country(film_country) not in pure_country:
             filt_films.append(film)
 
 
@@ -227,7 +317,7 @@ def read_data(filepath: str) -> list:
     filmname, year, location
     '''
     begin, films_data = False, []
-    with open(filepath, 'r') as datafile:
+    with open(filepath, 'r', errors='ignore') as datafile:
         for line in datafile:
             try:
                 line = line.strip()
@@ -246,6 +336,8 @@ def read_data(filepath: str) -> list:
                     films_data.append([name, year, film_loc[1]])
             except ValueError:
                 continue
+            except IndexError:
+                print(line)
 
     return films_data
 
@@ -267,14 +359,14 @@ def filter_by_year(year: int, films_data) -> list:
     return filtered_films_data
 
 
-def locate_films(films):
+def locate_films(films, verbose=True):
     '''
     This function determines coordinates of place using geopy geolocator.
     It takes films list of lists as argument, where in each child sublist is supposed to be
     3 elements - filmname, year, location - and returns the same list of lists but each child
     sublist is extended with tuple of coordinatas (latitude, longitude)
 
-    >>> locate_films([['Backstroke', 2007, 'Salt Lake City, Utah, USA']])
+    >>> locate_films([['Backstroke', 2007, 'Salt Lake City, Utah, USA']], False)
     [['Backstroke', 2007, 'Salt Lake City, Utah, USA', (40.7596198, -111.8867975)]]
     '''
     start = time.time()
@@ -283,16 +375,14 @@ def locate_films(films):
         try:
             location = already_located(film[2], films_loc)
             film_loc = film + [location]
-            # print('located?', film_loc)
             if location == None:
                 loc_gcode = geolocator.geocode(film[2])
                 location = tuple([loc_gcode.latitude, loc_gcode.longitude])
 
             film_loc = film + [location]
-                # print('not already located', film_loc)
-
             films_loc.append(film_loc)
-            print(f'{term.bold(film[0])}:\t{location}')
+            if verbose:
+                print(f'{film[2].split(",")[-1].strip()} {term.bold(film[0])}:\t{location}')
         except GeocoderUnavailable:
             print('geoerror:', film)
             continue
@@ -300,7 +390,6 @@ def locate_films(films):
             print('attrerror', film)
             continue
 
-    print(f'Well, it took {round(time.time()-start, 2)} sec')
     return films_loc
 
 
@@ -314,4 +403,6 @@ def already_located(film_loc, films_loc):
 
 
 if __name__ == '__main__':
-    main()
+    #main()
+    import doctest
+    doctest.testmod()
