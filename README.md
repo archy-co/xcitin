@@ -21,11 +21,17 @@ Example run for year **2004** and user location **[37.09024, -95.712891]** (Note
 
 ## Tags Description
 script tag - javascript code inside
+
 style tag - css code inside (styling hypertext)
+
 body tag - website itself
+
 div tag - block
+
 link tag - load some external files
+
 meta tag - charset, encoding
+
 
 ## Author
 **Archy**
