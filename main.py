@@ -9,6 +9,7 @@ import folium
 import blessed
 
 term = blessed.Terminal()
+geolocator = Nominatim(user_agent='xcitin')
 
 def print_main_screen():
     '''
@@ -67,39 +68,130 @@ def main():
         read data file, filter it and find closest locations
         mark this location on map on seperate lawyer
     '''
-    print_main_screen()
-    year, coordinates = request_data()
-    #print(year, coordinates)
-    #coordinates = [46.314755, 25.082925]
-    mappy = folium.Map(tiles='OpenStreetMap', location=coordinates, zoom_start=6)
+    #print_main_screen()
+    #year, user_coordinates = request_data()
+    #print(year, user_coordinates)
+    user_coordinates = [7.09024, -105.712891]
+    user_coordinates = [-26.85338750,133.27515449] # Aursralia
+    user_coordinates = [53.41291, -8.24389] # Ireland
+    user_coordinates = [50.5010789, 4.4764595] # Belgie
+    user_coordinates = [40.463667, -3.74922] # Spain
+    user_coordinates = [52.132633, 5.291266] # Netherlands
+    user_coordinates = [49.8037633, 15.4749126] # Czeck republic
+    user_coordinates = [37.09024, -95.712891] # USA
+
+    
+    user_location = geolocator.geocode(user_coordinates)
+    user_country = unify_country(str(user_location).split(',')[-1].strip())
+
+    print('USER COUNTRY:', user_country)
+
+    year= 2005
+    mappy = folium.Map(tiles='OpenStreetMap', location=user_coordinates, zoom_start=6)
     user_location = folium.FeatureGroup(name='User location')
-    user_location.add_child(folium.Marker(location=coordinates,
+    user_location.add_child(folium.Marker(location=user_coordinates,
                                           popup='You are here',
-                                          icon=folium.Icon()))
+                                          icon=folium.Icon(icon='home')))
     mappy.add_child(user_location)
 
-    #year = 2007
 
-    yearfilt_films = filter_by_year(year, read_data('locations.list.min'))
+    filtered_films = filter_by_year(year, read_data('locations.list.min'))
+    print(f'year: {len(filtered_films)}')
+
+    filtered_films = filter_federal(filtered_films)
+    print(f'federal: {len(filtered_films)}')
+
+
+    pure_countries = ['USA', 'Canada', 'UK', 'France', 'Spain', 'Germany']
+
+    for p_country in pure_countries:
+        filtered_films = filter_pure_country(p_country, filtered_films, user_country)
+        print(f'Filter {p_country}: {len(filtered_films)}')
+
+
     print('Now I\'ll be finding location\'s coordinates. It may take some time. I\'ll log you',
           'what I found right away so that you didn\'t get bored :)')
-    yearfilt_loc_films = locate_films(yearfilt_films)
-    yearfilt_loc_dist_films_complete = find_distance_asc(yearfilt_loc_films, coordinates)
+
+    located_films = locate_films(filtered_films)
+    yearfilt_loc_dist_films_complete = find_distance_asc(located_films, user_coordinates)
 
     film_locs = folium.FeatureGroup(name='Film Locations')
 
     for film in yearfilt_loc_dist_films_complete[:7]:
         film_locs.add_child(folium.Marker(location=film[3],
                                          popup=film[0],
-                                         icon=folium.Icon(color='pink')))
+                                         icon=folium.Icon(icon='fas', color='pink')))
 
     mappy.add_child(film_locs)
 
+
+    famous_film_places_gr = folium.FeatureGroup(name='Famous Film Places')
+
+    famous_film_places = [[[34.0928092, -118.3286614], 'Hollywood'],
+                     [[40.703830518, -74.005666644], 'Wall Street']]
+
+    for coord, loc in famous_film_places:
+        famous_film_places_gr.add_child(folium.Marker(location=coord,
+                                         popup=loc,
+                                         icon=folium.Icon(icon='star', color='lightgreen')))
+
+    mappy.add_child(famous_film_places_gr)
+
+
+
     mapname = 'tourning_places.html'
-
     print(f'Everything is ready, take a look to {term.bold(mapname)}')
-
     mappy.save(mapname)
+
+
+
+def unify_country(country):
+    '''
+    Unifies country names
+    '''
+    if country in ['United States', 'United States of America']:
+        return 'USA'
+    elif country in ['United Kingdom', 'Éire / Ireland']:
+        return 'UK'
+    elif country in ['France', 'Monaco', 'België / Belgique / Belgien']:
+        return 'France'
+    elif country in ['Portugal', 'España', 'Andorra']:
+        return 'Spain'
+    elif country in ['Nederland', 'Deutschland', 'Česko']:
+        return 'Germany'
+    else:
+        return country
+
+
+def filter_federal(films):
+    '''
+    Filters films which contains word federal in location, because they raises geopy exception
+    for handling which extra 4 secs are required for each film. Therefore, for some years it could
+    ooptimize time twice
+    '''
+    filt_films = []
+    for film in films:
+        if 'Federal' not in film[2]:
+            filt_films.append(film)
+
+    return filt_films
+
+
+def filter_pure_country(pure_country, films, user_country):
+    '''
+    filters pure countries
+    '''
+    filt_films = []
+    for film in films:
+        film_country = film[2].split(',')[-1].strip()
+        if user_country in pure_country and film_country in pure_country:
+            filt_films.append(film)
+        elif user_country not in pure_country and film_country not in pure_country:
+            filt_films.append(film)
+
+
+    return filt_films
+    
 
 
 def find_distance_asc(films_data, coordinates):
@@ -186,21 +278,38 @@ def locate_films(films):
     [['Backstroke', 2007, 'Salt Lake City, Utah, USA', (40.7596198, -111.8867975)]]
     '''
     start = time.time()
-    geolocator = Nominatim(user_agent='xcitin')
     films_loc = []
     for film in films:
         try:
-            location = geolocator.geocode(film[2])
-            film_loc = film + [tuple([location.latitude, location.longitude])]
+            location = already_located(film[2], films_loc)
+            film_loc = film + [location]
+            # print('located?', film_loc)
+            if location == None:
+                loc_gcode = geolocator.geocode(film[2])
+                location = tuple([loc_gcode.latitude, loc_gcode.longitude])
+
+            film_loc = film + [location]
+                # print('not already located', film_loc)
+
             films_loc.append(film_loc)
-            print(f'{term.bold(film[0])}:\t({round(location.latitude, 4)}, {round(location.longitude, 4)})')
+            print(f'{term.bold(film[0])}:\t{location}')
         except GeocoderUnavailable:
+            print('geoerror:', film)
             continue
         except AttributeError as err:
+            print('attrerror', film)
             continue
 
     print(f'Well, it took {round(time.time()-start, 2)} sec')
     return films_loc
+
+
+def already_located(film_loc, films_loc):
+    for film in films_loc:
+        if film[2] == film_loc:
+            return film[-1]
+
+    return None
 
 
 
