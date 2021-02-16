@@ -97,14 +97,13 @@ def main():
     user_coordinates = [32.62781, -115.45446] # Mexico
     user_coordinates = [49.55404, 25.59067] # Ternopil
     user_coordinates = [37.09024, -95.712891] # USA
-    user_coordinates = [17.607789, 8.081666] # Niger
 
 
     
     user_location = geolocator.geocode(user_coordinates)
     user_country = unify_country(str(user_location).split(',')[-1].strip())
 
-    print('USER COUNTRY:', user_country)
+    print('Country:', user_country)
 
     year= 2004
     mappy = folium.Map(tiles='OpenStreetMap', location=user_coordinates, zoom_start=6)
@@ -116,19 +115,19 @@ def main():
 
 
     filtered_films = filter_by_year(year, read_data('locations.list'))
-    print(f'For {year}: {len(filtered_films)} films\' locations')
+    print(f'For {year}: {term.bold(len(filtered_films))} films\' locations found')
 
     filtered_films = filter_federal(filtered_films)
     filtered_films = filter_pure_countries(filtered_films, user_country)
 
-    print(f'Total location to check: {len(filtered_films)}')
+    print(f'Total location after filtering: {term.bold(len(filtered_films))}')
 
     if len(filtered_films) > 900:
         filtered_films = random_pick(filtered_films, FILMS_LIST_CHECKSIZE)
-        print(f'Picked {len(filtered_films)} random of them')
+        print(f'Picked {term.bold(len(filtered_films))} random of them')
         
 
-    print(f'Now I\'ll be finding location\'s coordinates for {len(filtered_films)} locations.\n',
+    print(f'\n\n Now I\'ll be finding location\'s coordinates for {len(filtered_films)} locations.\n',
           f'It may take some time - estimated time: {round(len(filtered_films)/3, 2)} sec\n',
           'I\'ll log you what I found right away so that you didn\'t get bored :)')
 
@@ -337,7 +336,7 @@ def read_data(filepath: str) -> list:
             except ValueError:
                 continue
             except IndexError:
-                print(line)
+                continue
 
     return films_data
 
@@ -382,12 +381,12 @@ def locate_films(films, verbose=True):
             film_loc = film + [location]
             films_loc.append(film_loc)
             if verbose:
-                print(f'{film[2].split(",")[-1].strip()} {term.bold(film[0])}:\t{location}')
+                print(f'{term.bold(film[0])}:\t{location} - {film[2].split(",")[-1].strip()} ')
         except GeocoderUnavailable:
-            print('geoerror:', film)
+            #print('geoerror:', film)   # specific geopy exception
             continue
         except AttributeError as err:
-            print('attrerror', film)
+            #print('attrerror', film)   # location not found
             continue
 
     return films_loc
@@ -403,6 +402,4 @@ def already_located(film_loc, films_loc):
 
 
 if __name__ == '__main__':
-    #main()
-    import doctest
-    doctest.testmod()
+    main()
