@@ -74,30 +74,9 @@ def main():
         read data file, filter it and find closest locations
         mark this location on map on seperate lawyer
     '''
-    #print_main_screen()
-    #year, user_coordinates = request_data()
-    #print(year, user_coordinates)
-    user_coordinates = [7.09024, -105.712891]
-    user_coordinates = [-26.85338750,133.27515449] # Aursralia
-    user_coordinates = [53.41291, -8.24389] # Ireland
-    user_coordinates = [50.5010789, 4.4764595] # Belgie
-    user_coordinates = [40.463667, -3.74922] # Spain
-    user_coordinates = [52.132633, 5.291266] # Netherlands
-    user_coordinates = [49.8037633, 15.4749126] # Czeck republic
-    user_coordinates = [88.505859, 30.656816] # Asia
-    user_coordinates = [20.593684, 78.96288] # India
-    user_coordinates = [7.873054, 80.771797] # Sri Lanka
-    user_coordinates = [35.10964, 73.00781] # Pakistan
-    user_coordinates = [28.394857, 84.124008] # Nepal
-    user_coordinates = [46.818188, 8.227512] # Switzerland
-    user_coordinates = [43.93667, 12.44639] # San Marino
-    user_coordinates = [45.32829, 11.6415] # Italy
-    user_coordinates = [47.7, 13.06667] # Austria
-    user_coordinates = [41.14961, -8.61099] # Portugal
-    user_coordinates = [32.62781, -115.45446] # Mexico
-    user_coordinates = [49.55404, 25.59067] # Ternopil
-    user_coordinates = [37.09024, -95.712891] # USA
-
+    print_main_screen()
+    year, user_coordinates = request_data()
+    print(year, user_coordinates)
 
     
     user_location = geolocator.geocode(user_coordinates)
