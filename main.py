@@ -61,7 +61,7 @@ def request_data():
 
     print('Perfect!')
 
-    return (year, (lat, lon))
+    return (year, [lat, lon])
 
 
 def main():
@@ -76,8 +76,6 @@ def main():
     '''
     print_main_screen()
     year, user_coordinates = request_data()
-    print(year, user_coordinates)
-
     
     user_location = geolocator.geocode(user_coordinates)
     user_country = unify_country(str(user_location).split(',')[-1].strip())
@@ -94,21 +92,21 @@ def main():
 
 
     filtered_films = filter_by_year(year, read_data('locations.list'))
-    print(f'For {year}: {term.bold(len(filtered_films))} films\' locations found')
+    print(f'For {year}: {term.bold(str(len(filtered_films)))} films\' locations found')
 
     filtered_films = filter_federal(filtered_films)
     filtered_films = filter_pure_countries(filtered_films, user_country)
 
-    print(f'Total location after filtering: {term.bold(len(filtered_films))}')
+    print(f'Total location after filtering: {term.bold(str(len(filtered_films)))}')
 
     if len(filtered_films) > 900:
         filtered_films = random_pick(filtered_films, FILMS_LIST_CHECKSIZE)
-        print(f'Picked {term.bold(len(filtered_films))} random of them')
+        print(f'Picked {term.bold(str(len(filtered_films)))} random of them')
         
 
     print(f'\n\n Now I\'ll be finding location\'s coordinates for {len(filtered_films)} locations.\n',
           f'It may take some time - estimated time: {round(len(filtered_films)/3, 2)} sec\n',
-          'I\'ll log you what I found right away so that you didn\'t get bored :)')
+          'I\'ll log you what I found right away so that you didn\'t get bored :)\n\n')
 
     located_films = locate_films(filtered_films)
     yearfilt_loc_dist_films_complete = find_distance_asc(located_films, user_coordinates)
@@ -362,7 +360,7 @@ def locate_films(films, verbose=True):
             if verbose:
                 print(f'{term.bold(film[0])}:\t{location} - {film[2].split(",")[-1].strip()} ')
         except GeocoderUnavailable:
-            #print('geoerror:', film)   # specific geopy exception
+            print('geoerror:', film)   # specific geopy exception
             continue
         except AttributeError as err:
             #print('attrerror', film)   # location not found
